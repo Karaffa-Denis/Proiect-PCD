@@ -131,15 +131,9 @@ void *handle_client(void* arg){
         processed = gray; // fallback
     }
 
-    //reencodare jpg pentru trimitere
-    std::vector<uchar> buf_out;
-    cv::imencode(".jpg", processed, buf_out);
-    long out_size = buf_out.size();
-
-
     // transformam imaginea in jpg
     std::vector<uchar> buffer_out;
-    cv::imencode(".jpg", cropped, buffer_out);
+    cv::imencode(".jpg", processed, buffer_out);
 
     // noua dimensiune
     long out_size = buffer_out.size();
