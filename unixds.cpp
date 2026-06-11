@@ -33,13 +33,13 @@ void *unix_main (void* args){
     int bind_ret = bind(master_unix_fd, (struct sockaddr *) &addr, sizeof(addr));
     if (bind_ret < 0)
     {
-        perror("Error on binding socket");
+        perror("Eroare la bind pe socket");
         exit(EXIT_FAILURE);
     }
 
     if (listen(master_unix_fd,1) < 0)
     {
-        perror("Error on listen");
+        perror("Eroare la listen");
         exit(EXIT_FAILURE);
     }
 
@@ -102,9 +102,9 @@ void* handle_admin(void* arg){
 
         //cazul LIST
         if (strcmp(buffer, "LIST") == 0) {
-            printf("::: Sending list of clients to admin :::\n");
+            printf("::: Se trimite lista cu clientii la admin :::\n");
             
-            int offset = sprintf(response, "Fd-urile clienților conectați (%d total): ", num_clients);
+            int offset = sprintf(response, "Fd-urile clientilor conectati (%d total): ", num_clients);
 
             for (int i = 0; i < num_clients; i++) {
                 offset += sprintf(response + offset, "%d%s", connected_clients[i], (i == num_clients - 1) ? "" : ", ");
@@ -120,7 +120,7 @@ void* handle_admin(void* arg){
         else if(strncmp(buffer, "KICK:", KICKFD) == 0) {
             int kick_fd = atoi(buffer+KICKFD);
 
-            printf("::: Kicking client with fd %d :::\n", kick_fd);
+            printf("::: Kick la client cu fd %d :::\n", kick_fd);
             shutdown(kick_fd, SHUT_RDWR);
             close(kick_fd); 
             if( remove_client(kick_fd) ==1 ){
@@ -167,7 +167,7 @@ void* handle_admin(void* arg){
 
         //cazul EXIT
         else if(strcmp(buffer, "EXIT") == 0){
-            printf("::: Admin is exiting :::\n");
+            printf("::: Adminul se deconecteaza :::\n");
             close(client_fd);
             admin_connected = 0; 
         }

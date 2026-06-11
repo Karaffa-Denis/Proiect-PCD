@@ -6,7 +6,7 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include "proto.h"
-
+#define ADMIN_SOCK "/tmp/admin.sock"
 int main() {
 
     pthread_t unix_thread;
@@ -17,5 +17,7 @@ int main() {
 
     pthread_join (unix_thread, NULL) ;
     pthread_join (inet_thread, NULL) ;
+
+    unlink(ADMIN_SOCK);
 }
 
