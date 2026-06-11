@@ -7,14 +7,12 @@ SERVER_IP = "127.0.0.1"
 
 def send_file(sock, path):
     try:
-        # obtinerea dimensiunii fisierului
         file_size = os.path.getsize(path)
 
-        # marimea fisierului
-        size_bytes = struct.pack('@l', file_size)
+        # '<q' = int64_t, 8 bytes, little-endian
+        size_bytes = struct.pack('<q', file_size)
         sock.sendall(size_bytes)
 
-        # deschidere si trimitere secventiala a fisierului
         with open(path, 'rb') as f:
             while True:
                 chunk = f.read(65536)
@@ -24,7 +22,22 @@ def send_file(sock, path):
 
         print(f"[CLIENT] Imagine trimisa: {path} ({file_size} bytes)")
 
-    # diverse erori
+        # primeste imaginea procesata
+        out_size_bytes = sock.recv(8)
+        out_size = struct.unpack('<q', out_size_bytes)[0]
+
+        result = b''
+        while len(result) < out_size:
+            chunk = sock.recv(min(65536, out_size - len(result)))
+            if not chunk:
+                break
+            result += chunk
+
+        with open('rezultat.jpg', 'wb') as f:
+            f.write(result)
+
+        print(f"[CLIENT] Imagine procesata salvata: rezultat.jpg ({out_size} bytes)")
+
     except FileNotFoundError:
         print(f"Eroare: Fisierul '{path}' nu a putut fi deschis.")
     except Exception as e:
@@ -63,22 +76,12 @@ def main():
             send_file(sock, file_path)
             continue
 
-        #trimitere mesaj
-        try:
-            # convertire in octeti inaite de trimitrere (specific python)
-            sock.sendall(user_input.encode('utf-8'))
+        
+        
+        sock.sendall(user_input.encode('utf-8'))
 
-            # raspunsul
-            response = sock.recv(512)
-            if response:
-                #decodare
-                print(f"[SERVER] {response.decode('utf-8', errors='ignore')}")
-            else:
-                print("[CLIENT] Conexiune inchisa de server.")
-                break
-        except Exception as e:
-            print(f"[CLIENT] Eroare: {e}")
-            break
+            
+        
 
     sock.close()
     print("[CLIENT] deconectat.")
