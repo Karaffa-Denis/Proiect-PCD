@@ -16,6 +16,7 @@ int main() {
     strcpy(addr.sun_path, ADMIN_SOCK);
 
     if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        
         perror("connect - serverul admin nu e pornit?");
         return 1;
     }

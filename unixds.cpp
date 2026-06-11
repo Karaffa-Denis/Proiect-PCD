@@ -47,6 +47,14 @@ void *unix_main (void* args){
     while(shutdown_in_progress==0){
         int *client_fd = new int(accept(master_unix_fd, NULL, NULL));
 
+        if (*client_fd < 0) {
+            if (shutdown_in_progress) {
+                break; 
+            }
+            perror("Eroare la accept");
+            continue;
+        }
+
         if(admin_connected==0){
             printf("[INFO] Client admin cu fd:%d acceptat\n", *client_fd);
             
@@ -113,15 +121,21 @@ void* handle_admin(void* arg){
             int kick_fd = atoi(buffer+KICKFD);
 
             printf("::: Kicking client with fd %d :::\n", kick_fd);
-
+            shutdown(kick_fd, SHUT_RDWR);
             close(kick_fd); 
-            remove_client(kick_fd);
-
-            if( sprintf(response, "Socket-ul clientului cu fd-ul: %d a fost inchis", kick_fd) < 0 ){
+            if( remove_client(kick_fd) ==1 ){
+                if( sprintf(response, "Socket-ul clientului cu fd-ul: %d a fost inchis", kick_fd) < 0 ){
                     perror("Eroare sprintf");
                     exit(EXIT_FAILURE);
+                }
             }
-
+            else{
+                if( sprintf(response, "Clientul cu fd-ul: %d nu a fost gasit", kick_fd) < 0 ){
+                    perror("Eroare sprintf");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            
             send(client_fd, response, strlen(response), 0);
         }
 
@@ -129,8 +143,26 @@ void* handle_admin(void* arg){
         else if(strcmp(buffer, "SHUTDOWN")== 0){
             printf("::: Server shutdown :::\n");
             shutdown_in_progress = 1;
+            shutdown(master_unix_fd, SHUT_RDWR);
             close(master_unix_fd);
+
+            shutdown(master_inet_fd, SHUT_RDWR);
             close(master_inet_fd);
+
+            pthread_mutex_lock(&clients_mutex);
+            for (int i = 0; i < num_clients; i++) {
+                shutdown(connected_clients[i], SHUT_RDWR); 
+                close(connected_clients[i]);
+            }
+            num_clients = 0;
+            pthread_mutex_unlock(&clients_mutex);
+
+            sprintf(response, "Serverul se oprește complet...\n");
+            send(client_fd, response, strlen(response), 0);
+            
+            close(client_fd);
+            admin_connected = 0;
+            return NULL;
         }
 
         //cazul EXIT
@@ -138,6 +170,16 @@ void* handle_admin(void* arg){
             printf("::: Admin is exiting :::\n");
             close(client_fd);
             admin_connected = 0; 
+        }
+
+        else{
+            printf(":::Comanda necunoscuta:::\n");
+            if( sprintf(response, "Eroare: Comanda necunoscuta") < 0 ){
+                    perror("Eroare sprintf");
+                    exit(EXIT_FAILURE);
+            }
+
+            send(client_fd, response, strlen(response), 0);
         }
 
     }

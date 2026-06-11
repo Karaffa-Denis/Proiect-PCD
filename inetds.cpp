@@ -18,7 +18,6 @@
 
 
 void add_client(int fd);
-void remove_client(int fd);
 void *handle_client(void* arg);
 
 void *inet_main (void* args) {
@@ -53,6 +52,14 @@ void *inet_main (void* args) {
 
     while(shutdown_in_progress == 0){
         int *client_fd = new int(accept(master_inet_fd, NULL, NULL));
+
+        if (*client_fd < 0) {
+            if (shutdown_in_progress) {
+                break; 
+            }
+            perror("Eroare la accept");
+            continue;
+        }
 
         add_client(*client_fd);
 
